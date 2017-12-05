@@ -6,6 +6,8 @@ import Table,  {
   TableRow,
   TableCell
 } from 'material-ui/Table';
+import { Link } from 'react-router-dom'
+
 
 export default class DecisionTable extends PureComponent {
   constructor() {
@@ -25,7 +27,9 @@ export default class DecisionTable extends PureComponent {
           rows.push((
               <TableRow key={decision.id}>
                 <TableCell>
-                  {decision.data().description}
+                  <Link to={'/decisions/' + decision.id}>
+                    {decision.data().description}
+                  </Link>
                 </TableCell>
               </TableRow>
             ));

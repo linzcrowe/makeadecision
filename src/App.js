@@ -1,7 +1,15 @@
 import React, { Component } from 'react';
 import firebase from 'firebase';
 import 'firebase/firestore';
-import DecisionTable from './components/DecisionTable';
+import {
+  BrowserRouter as Router,
+  Route,
+  Switch,
+  Link
+} from 'react-router-dom'
+import Home from './components/Home';
+import Decision from './components/Decision';
+import NoMatch from './components/NoMatch';
 import './App.css';
 
 class App extends Component {
@@ -19,16 +27,24 @@ class App extends Component {
 
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <h1 className="App-title">Make a Decision!</h1>
-          <p>Create a decision point, list the options, and get a decision!</p>
-        </header>
-        <p className="App-intro">
-          Decisions in flight.
-        </p>
-        <DecisionTable />
-      </div>
+      <Router>
+        <div className="App">
+          <header className="App-header">
+            <h1 className="App-title">
+              <Link to='/'>
+                Make a Decision!
+              </Link>
+            </h1>
+            <p>Create a decision point, list the options, and get a decision!</p>
+          </header>
+
+          <Switch>
+            <Route exact path="/" component={Home}/>
+            <Route path="/decisions/:id" component={Decision} />
+            <Route component={NoMatch}/>
+          </Switch>
+        </div>
+      </Router>
     );
   }
 }
