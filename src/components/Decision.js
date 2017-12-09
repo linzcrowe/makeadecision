@@ -7,12 +7,17 @@ import Table,  {
   TableCell
 } from 'material-ui/Table';
 import Button from 'material-ui/Button';
+import OptionAdder from './OptionAdder';
+import { CircularProgress } from 'material-ui/Progress';
 
 export default class Decision extends PureComponent {
   constructor(props) {
     super();
     this.decisionId = props.match.params.id;
     this.state = {
+      decisionLoaded: false,
+      optionsLoaded: false,
+      votesLoaded: false,
       description: '',
       finalDecision: '',
       options: [],
@@ -25,55 +30,62 @@ export default class Decision extends PureComponent {
       .collection('decisions').doc(this.decisionId).get()
       .then(snapshot => {
         this.setState({
+          decisionLoaded: true,
           description: snapshot.data().description,
           finalDecision: snapshot.data().finalDecision
-        })
+        });
       })
   }
 
   getDecisionOptions() {
     // get and store the options
     firebase.firestore()
-      .collection('decisions').doc(this.decisionId).collection('options').get()
-      .then(decision => {
-        console.log("got some options to go through: " + decision.size);
+      .collection('decisions').doc(this.decisionId).collection('options')
+      .onSnapshot(decision => {
         let options = [];
         decision.forEach(option => {
-          console.log(option.id, '=>', option.data());
           options.push({
             id: option.id,
             description: option.data().description
           });
         });
         this.setState({
+          optionsLoaded: true,
           options: options
         });
       })
-
-      .catch(err => {
-        console.log('Error getting decision options', err);
-      });
   }
 
   getDecisionVotes() {
     // get and store the votes
     firebase.firestore()
-      .collection('decisions').doc(this.decisionId).collection('votes').get()
-      .then(snapshot => {
+      .collection('decisions').doc(this.decisionId).collection('votes')
+      .onSnapshot(snapshot => {
         let votes = [];
+
         snapshot.forEach(vote => {
-          console.log(vote.id, '=>', vote.data());
           votes.push({
             id: vote.id,
-            option: vote.data().option
+            option: vote.data().optionId
           });
         });
         this.setState({
+          votesLoaded: true,
           votes: votes
         });
       })
-      .catch(err => {
-        console.log('Error getting decision votes', err);
+      // .catch(err => {
+      //   console.log('Error getting decision votes', err);
+      // });
+  }
+
+  castVote(option) {
+    firebase.firestore().collection('decisions').doc(this.decisionId).collection('votes')
+      .add({
+          optionId: option
+        })
+      .then(ref => {
+        console.log('Added document with ID: ', ref.id);
       });
   }
 
@@ -87,10 +99,13 @@ export default class Decision extends PureComponent {
             {option.description}
           </TableCell>
           <TableCell>
-            { this.state.votes.filter(vote => vote.option === option.id).length }
+            { this.state.votes.filter(vote => {
+                return vote.option === option.id;
+              }).length
+            }
           </TableCell>
           <TableCell>
-            <Button>
+            <Button raised color="primary" onClick={() => this.castVote(option.id)}>
               Vote
             </Button>
           </TableCell>
@@ -101,10 +116,6 @@ export default class Decision extends PureComponent {
     return result;
   }
 
-  getVotes(votes, optionId) {
-    return votes.find(vote => vote.option === optionId);
-  }
-
   componentWillMount() {
     this.getDecision();
     this.getDecisionOptions();
@@ -112,29 +123,39 @@ export default class Decision extends PureComponent {
   }
 
   render() {
-    const rows = this.generateRows();
-    console.log(rows);
-
-    return (
-      <div>
-        <h1>{this.state.description}</h1>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                Option
-              </TableCell>
-              <TableCell>
-                Votes
-              </TableCell>
-              <TableCell />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            { this.generateRows() }
-          </TableBody>
-        </Table>
-      </div>
-    );
+    if (!this.state.decisionLoaded || 
+        !this.state.optionsLoaded || 
+        !this.state.votesLoaded) {
+      const s = {
+        padding: "20px"
+      }
+      return (
+        <div>
+          <CircularProgress style={s} />
+        </div>);
+    } else {
+      return (
+        <div>
+          <h1>{this.state.description}</h1>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>
+                  Option
+                </TableCell>
+                <TableCell>
+                  Votes
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              { this.generateRows() }
+            </TableBody>
+          </Table>
+          <OptionAdder decisionId={this.decisionId} />
+        </div>
+      );
+    }
   }
 }
