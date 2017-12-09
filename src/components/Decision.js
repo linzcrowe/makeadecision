@@ -9,6 +9,8 @@ import Table,  {
 import Button from 'material-ui/Button';
 import OptionAdder from './OptionAdder';
 import { CircularProgress } from 'material-ui/Progress';
+import IconButton from 'material-ui/IconButton';
+import DeleteIcon from 'material-ui-icons/Delete';
 
 export default class Decision extends PureComponent {
   constructor(props) {
@@ -23,6 +25,8 @@ export default class Decision extends PureComponent {
       options: [],
       votes: []
     }
+    this.castVote = this.castVote.bind(this);
+    this.deleteOption = this.deleteOption.bind(this);
   }
 
   getDecision() {
@@ -74,9 +78,6 @@ export default class Decision extends PureComponent {
           votes: votes
         });
       })
-      // .catch(err => {
-      //   console.log('Error getting decision votes', err);
-      // });
   }
 
   castVote(option) {
@@ -89,12 +90,26 @@ export default class Decision extends PureComponent {
       });
   }
 
+  deleteOption(option) {
+    firebase.firestore()
+      .collection('decisions')
+      .doc(this.decisionId)
+      .collection('options')
+      .doc(option)
+      .delete();
+  }
+
   generateRows(options) {
     let result = [];
 
     this.state.options.forEach(option => {
       result.push(
         <TableRow key={option.id}>
+          <TableCell>
+            <IconButton aria-label="Delete" onClick={() => this.deleteOption(option.id)}>
+              <DeleteIcon />
+            </IconButton>
+          </TableCell>
           <TableCell>
             {option.description}
           </TableCell>
@@ -140,6 +155,7 @@ export default class Decision extends PureComponent {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell />
                 <TableCell>
                   Option
                 </TableCell>
