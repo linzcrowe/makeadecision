@@ -11,11 +11,18 @@ import OptionAdder from './OptionAdder';
 import { CircularProgress } from 'material-ui/Progress';
 import IconButton from 'material-ui/IconButton';
 import DeleteIcon from 'material-ui-icons/Delete';
+import DecisionMaker from './DecisionMaker';
+import DecisionLocker from './DecisionLocker';
 
 export default class Decision extends PureComponent {
   constructor(props) {
     super();
     this.decisionId = props.match.params.id;
+    this.statuses = {
+      addingOptions: 'adding-options',
+      openToVoting: 'open-to-voting',
+      decisionMade: 'decision-made',
+    }
     this.state = {
       decisionLoaded: false,
       optionsLoaded: false,
@@ -23,20 +30,26 @@ export default class Decision extends PureComponent {
       description: '',
       finalDecision: '',
       options: [],
-      votes: []
+      votes: [],
+      status: this.statuses.addingOptions,
     }
     this.castVote = this.castVote.bind(this);
     this.deleteOption = this.deleteOption.bind(this);
+    this.lockdownDecision = this.lockdownDecision.bind(this);
+    this.makeDecision = this.makeDecision.bind(this);
   }
 
   getDecision() {
     firebase.firestore()
-      .collection('decisions').doc(this.decisionId).get()
-      .then(snapshot => {
+      .collection('decisions').doc(this.decisionId)
+      .onSnapshot(snapshot => {
         this.setState({
           decisionLoaded: true,
           description: snapshot.data().description,
-          finalDecision: snapshot.data().finalDecision
+          finalDecision: snapshot.data().finalDecision,
+          status: (snapshot.data().status ? 
+                  snapshot.data().status : 
+                  this.statuses.addingOptions),
         });
       })
   }
@@ -85,8 +98,8 @@ export default class Decision extends PureComponent {
       .add({
           optionId: option
         })
-      .then(ref => {
-        console.log('Added document with ID: ', ref.id);
+      .catch(error => {
+        console.log('Failed to cast vote', error);
       });
   }
 
@@ -99,36 +112,138 @@ export default class Decision extends PureComponent {
       .delete();
   }
 
-  generateRows(options) {
-    let result = [];
+  generateTableContents(options) {
+    let tableHead = null;
+    let tableBodyRows = [];
+    let winnerStyle = {
+      fontWeight:'bold',
+    };
+    let loserStyle = {
+      color:'gray',
+    }
 
-    this.state.options.forEach(option => {
-      result.push(
-        <TableRow key={option.id}>
-          <TableCell>
-            <IconButton aria-label="Delete" onClick={() => this.deleteOption(option.id)}>
-              <DeleteIcon />
-            </IconButton>
-          </TableCell>
-          <TableCell>
-            {option.description}
-          </TableCell>
-          <TableCell>
-            { this.state.votes.filter(vote => {
-                return vote.option === option.id;
-              }).length
+    switch (this.state.status) {
+      case this.statuses.addingOptions:
+        tableHead = (
+          <TableHead>
+            <TableRow>
+              <TableCell /> {/* Delete button column */}
+              <TableCell>
+                Option
+              </TableCell>
+            </TableRow>
+          </TableHead>);
+
+        this.state.options.forEach(option => {
+          tableBodyRows.push(
+            <TableRow 
+              key={option.id}>
+              <TableCell>
+                <IconButton 
+                  aria-label="Delete" 
+                  onClick={() => this.deleteOption(option.id)}>
+                  <DeleteIcon />
+                </IconButton>
+              </TableCell>
+              <TableCell>
+                {option.description}
+              </TableCell>
+            </TableRow>
+          );
+        });
+        break;
+
+      case this.statuses.openToVoting:
+        tableHead = (
+          <TableHead>
+            <TableRow>
+              <TableCell>
+                Option
+              </TableCell>
+              <TableCell>
+                Votes
+              </TableCell>
+              <TableCell /> {/* vote button row */}
+            </TableRow>
+          </TableHead>);
+
+        this.state.options.forEach(option => {
+          tableBodyRows.push(
+            <TableRow
+              key={option.id}>
+              <TableCell>
+                {option.description}
+              </TableCell>
+              <TableCell>
+                { this.state.votes.filter(vote => {
+                    return vote.option === option.id;
+                  }).length
+                }
+              </TableCell>
+              <TableCell>
+                <Button color="primary" onClick={() => this.castVote(option.id)}>
+                  Vote
+                </Button>
+              </TableCell>
+            </TableRow>
+          );
+        });
+        break;
+
+      case this.statuses.decisionMade:
+        tableHead = (
+          <TableHead>
+            <TableRow>
+              <TableCell>
+                Option
+              </TableCell>
+              <TableCell>
+                Votes
+              </TableCell>
+            </TableRow>
+          </TableHead>);
+
+        this.state.options.forEach(option => {
+          let textStyle = {};
+          if (this.state.finalDecision) {
+            if (this.state.finalDecision === option.id) {
+              textStyle = winnerStyle;
+            } else {
+              textStyle = loserStyle;
             }
-          </TableCell>
-          <TableCell>
-            <Button raised color="primary" onClick={() => this.castVote(option.id)}>
-              Vote
-            </Button>
-          </TableCell>
-        </TableRow>
-      );
-    });
+          }
 
-    return result;
+          tableBodyRows.push(
+            <TableRow 
+              key={option.id}>
+              <TableCell
+                style={textStyle} 
+                >
+                {option.description}
+              </TableCell>
+              <TableCell
+                style={textStyle}
+                >
+                { this.state.votes.filter(vote => {
+                    return vote.option === option.id;
+                  }).length
+                }
+              </TableCell>
+            </TableRow>
+            );
+        });
+        break;
+      default:
+        break;
+    }
+
+    return (
+      <Table>
+        {tableHead}
+        <TableBody>
+          {tableBodyRows}
+        </TableBody>
+      </Table>);
   }
 
   componentWillMount() {
@@ -137,39 +252,66 @@ export default class Decision extends PureComponent {
     this.getDecisionVotes();
   }
 
+  lockdownDecision() {
+    firebase.firestore()
+      .collection('decisions')
+      .doc(this.decisionId)
+      .set({
+          status: this.statuses.openToVoting,
+        }, { 
+          merge: true 
+        });
+  }
+
+  makeDecision(winner) {
+    firebase.firestore()
+      .collection('decisions')
+      .doc(this.decisionId)
+      .set({
+          finalDecision: winner.id,
+          status: this.statuses.decisionMade,
+        }, { 
+          merge: true 
+        });
+  }
+
   render() {
     if (!this.state.decisionLoaded || 
         !this.state.optionsLoaded || 
         !this.state.votesLoaded) {
-      const s = {
+      const circularProgressStyle = {
         padding: "20px"
       }
       return (
         <div>
-          <CircularProgress style={s} />
+          <CircularProgress style={circularProgressStyle} />
         </div>);
     } else {
       return (
         <div>
           <h1>{this.state.description}</h1>
           <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell />
-                <TableCell>
-                  Option
-                </TableCell>
-                <TableCell>
-                  Votes
-                </TableCell>
-                <TableCell />
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              { this.generateRows() }
-            </TableBody>
+            {this.generateTableContents()}
           </Table>
-          <OptionAdder decisionId={this.decisionId} />
+          {this.state.status === this.statuses.addingOptions && 
+          <OptionAdder 
+            decisionId={this.decisionId}
+            options={this.state.options}
+            votes={this.state.votes} />
+          }
+          {this.state.status === this.statuses.addingOptions && 
+          <DecisionLocker
+            lockdownDecision={this.lockdownDecision}>
+            Open to votes
+          </DecisionLocker>
+          }
+          {this.state.status === this.statuses.openToVoting &&
+          <DecisionMaker
+            onMakeDecision={this.makeDecision}
+            options={this.state.options}
+            votes={this.state.votes}
+            decisionId={this.decisionId} />
+          }
         </div>
       );
     }

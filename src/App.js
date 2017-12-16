@@ -35,7 +35,7 @@ class App extends Component {
                 Make a Decision!
               </Link>
             </h1>
-            <p>Create a decision point, list the options, and get a decision!</p>
+            <p>To help the indecisive amongst us</p>
           </header>
 
           <Switch>
