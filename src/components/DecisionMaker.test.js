@@ -1,5 +1,7 @@
 import DecisionMaker from './DecisionMaker';
 
-it('passes a dummy test', () => {
-  expect(true).toBeTruthy();
+test('#canDecisionBeMade', () => {
+  it('returns false if no options given', () => {
+    expect(DecisionMaker.canDecisionBeMade()).toBeFalsy();
+  })
 })

@@ -4,12 +4,8 @@ import Select from 'material-ui/Select';
 import { MenuItem } from 'material-ui/Menu';
 
 export default class DecisionMaker extends PureComponent {
-  constructor({
-    options,
-    votes,
-    onMakeDecision,
-  }) {
-    super()
+  constructor(props) {
+    super(props)
     this.makeDecision = this.makeDecision.bind(this);
   }
 
