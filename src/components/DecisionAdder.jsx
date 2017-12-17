@@ -105,3 +105,4 @@ export default class DecisionAdder extends PureComponent {
     );
   }
 }
+

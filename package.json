@@ -10,6 +10,7 @@
     "firebase-admin": "^5.5.1",
     "material-ui": "^1.0.0-beta.22",
     "material-ui-icons": "^1.0.0-beta.17",
+    "prop-types": "^15.6.0",
     "react": "^16.2.0",
     "react-dom": "^16.2.0",
     "react-router-dom": "^4.2.2",
@@ -21,11 +22,17 @@
     "build": "react-scripts build",
     "not_working_test": "react-scripts test --env=jsdom",
     "test": "jest",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "./node_modules/.bin/eslint ."
   },
   "devDependencies": {
     "babel-register": "^6.26.0",
     "enzyme": "^3.2.0",
+    "eslint": "^4.13.1",
+    "eslint-config-airbnb": "^16.1.0",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-jsx-a11y": "^6.0.3",
+    "eslint-plugin-react": "^7.5.1",
     "jest": "^21.2.1",
     "jest-cli": "^21.2.1"
   },

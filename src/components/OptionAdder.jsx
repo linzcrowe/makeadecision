@@ -2,28 +2,29 @@ import React, { PureComponent } from 'react';
 import TextField from 'material-ui/TextField';
 import Button from 'material-ui/Button';
 import firebase from 'firebase';
+import PropTypes from 'prop-types';
 
 export default class OptionAdder extends PureComponent {
   constructor(props) {
-    super();
+    super(props);
     this.state = {
       showButton: false,
-      optionText: ""
+      optionText: '',
     };
     this.onSubmit = this.onSubmit.bind(this);
+    this.onTextChanged = this.onTextChanged.bind(this);
   }
 
-  onTextChanged = name => event => {
+  onTextChanged(event) {
     let showButton = false;
     if (event.target.value &&
-      event.target.value.length > 0)
-    {
-      showButton = true; 
+      event.target.value.length > 0) {
+      showButton = true;
     }
 
     this.setState({
-      showButton: showButton,
-      optionText: event.target.value
+      showButton,
+      optionText: event.target.value,
     });
   }
 
@@ -35,17 +36,17 @@ export default class OptionAdder extends PureComponent {
       .doc(this.props.decisionId)
       .collection('options')
       .add({
-          description: text,
-        });
+        description: text,
+      });
     this.setState({
-      optionText: ""
-    })
+      optionText: '',
+    });
   }
 
   render() {
     const divStyle = {
-      padding: "0px 20px 0px 20px"
-    }
+      padding: '0px 20px 0px 20px',
+    };
 
     return (
       <div>
@@ -59,14 +60,15 @@ export default class OptionAdder extends PureComponent {
               helperText="Add a new option"
               margin="normal"
               fullWidth
-              onChange={this.onTextChanged('name')}
+              onChange={this.onTextChanged}
               value={this.state.optionText}
               autoFocus
             />
           </div>
-          <Button 
-            display={this.state.showButton ? "initial" : "none"}
-            type="submit">
+          <Button
+            display={this.state.showButton ? 'initial' : 'none'}
+            type="submit"
+          >
             Add
           </Button>
         </form>
@@ -74,3 +76,7 @@ export default class OptionAdder extends PureComponent {
     );
   }
 }
+
+OptionAdder.propTypes = {
+  decisionId: PropTypes.string.isRequired,
+};

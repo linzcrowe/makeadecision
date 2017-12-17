@@ -1,46 +1,43 @@
 import React, { PureComponent } from 'react';
 import firebase from 'firebase';
-import Table,  {
+import Table, {
   TableHead,
   TableBody,
   TableRow,
-  TableCell
+  TableCell,
 } from 'material-ui/Table';
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom';
 
 
 export default class DecisionTable extends PureComponent {
   constructor() {
     super();
     this.state = {
-      decisions: []
-    }
+      decisions: [],
+    };
   }
 
   componentWillMount() {
     firebase.firestore()
       .collection('decisions').get()
-      .then(snapshot => {
-        let rows = [];
-        snapshot.forEach(decision => {
-          console.log(decision.id, '=>', decision.data());
+      .then((snapshot) => {
+        const rows = [];
+        snapshot.forEach((decision) => {
           rows.push((
-              <TableRow key={decision.id}>
-                <TableCell>
-                  <Link to={'/decisions/' + decision.id}>
-                    {decision.data().description}
-                  </Link>
-                </TableCell>
-              </TableRow>
-            ));
+            <TableRow key={decision.id}>
+              <TableCell>
+                <Link to={'/decisions/' + decision.id}>
+                  {decision.data().description}
+                </Link>
+              </TableCell>
+            </TableRow>
+          ));
         });
         this.setState({
-          decisions: rows
+          decisions: rows,
         });
       })
-      .catch(err => {
-        console.log('Error getting documents', err);
-      })
+      .catch(err => console.log('Error getting documents', err));
   }
 
   render() {

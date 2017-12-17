@@ -1,4 +1,5 @@
 import React, { PureComponent } from 'react';
+import PropTypes from 'prop-types';
 import Button from 'material-ui/Button';
 
 export default class DecisionLocker extends PureComponent {
@@ -6,9 +7,14 @@ export default class DecisionLocker extends PureComponent {
     return (
       <div>
         <Button primary onClick={this.props.lockdownDecision} >
-          {this.props.children}
+          {this.props.label}
         </Button>
       </div>
     );
   }
 }
+
+DecisionLocker.propTypes = {
+  lockdownDecision: PropTypes.func.isRequired,
+  label: PropTypes.string.isRequired,
+};
